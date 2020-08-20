@@ -1,0 +1,448 @@
+<html>
+	<head>
+		<style>
+			canvas{
+				   border  : 1px solid black;
+				  }
+		</style>
+	
+	 <canvas id="canvas" width="920" height ="530" onmousedown="selectPlayer(event)"></canvas>
+	 <br>
+	 Turn
+	 <input type="text" id="turn" readonly>
+	 <br>
+	 Type initVelocityX(m/s) here 
+	 <input type="number" id="initVelocityX" value="10">
+	 Type initVelocityY(m/s) here 
+	 <input type="number" id="initVelocityY" value="10">
+	 <input type="button" id="apply" onclick="apply()" value="Apply">
+	 <input type="button" id="fire" onclick="fire()" value="Fire">
+	 <input type="button"  onclick="location.reload()" value="Restart">
+	 <img id="Mercury" width="0" height="0" src="https://www.sciencesource.com/Doc/TR1_WATERMARKED/c/8/d/b/SS2194892.jpg?d63641560148">
+	 <img id="Venus" width="0" height="0" src="https://www.sciencesource.com/Doc/TR1_WATERMARKED/3/1/3/b/SS21555107.jpg?d63672432543">
+	 <img id="Earth" width="0" height="0" src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Sierra_Nevada-terabass.jpg/1024px-Sierra_Nevada-terabass.jpg" >
+	 <img id="Moon" width="0" height="0" src="https://i.pinimg.com/originals/bc/7e/90/bc7e902dd2c12a88f9ccb9bb628758cf.jpg">
+	 <img id="Mars" width="0" height="0" src="https://content.presspage.com/uploads/1979/1920_190327-mars-sample-return-banner-149413.jpg?10000">
+	 <img id="Jupiter" width="0" height="0" src="https://i.redd.it/4hqxvr01gmj41.png">
+	 <img id="Saturn" width="0" height="0" src="https://www.syfy.com/sites/syfy/files/styles/1200x680_hero/public/cassini_finaldives_artwork.jpg">
+	 <img id="Uranus" width="0" height="0" src="https://solarstory.net/img/articles/big/artist-impression-of-uranus-atmosphere.jpg">
+	 <img id="Neptune" width="0" height="0" src="https://i.pinimg.com/originals/1d/b9/d6/1db9d6b7d743de60846767fcb5c1d1b4.jpg">
+	 <img id="Pluto" width="0" height="0" src="https://images.csmonitor.com/csm/2016/05/979747_1_0705-pluto_standard.jpg?alias=standard_900x600nc">
+	</head>
+   <body>   
+		<script>
+			
+			// global variables
+			var missile  = null;
+			var missiles = new Array();
+			var player = null;
+			var players = new Array();
+			var numPlayers,playersLeft,occupied;
+			var i,j,playerX,playerY,startX,startY;
+			var playerTurn="";
+			var initVelocityXValue=10,initVelocityYValue=10,initDisplacementYValue=0;
+			var gravity,img=null;
+			var planet = Math.floor((Math.random() * 10) + 1);
+			
+			// global constants 
+			const canvas=document.getElementById("canvas");
+			const context=canvas.getContext('2d');
+			const rect = canvas.getBoundingClientRect();
+			const initDisplacementYBox = document.getElementById("initDisplacementY");
+			const initVelocityXBox = document.getElementById("initVelocityX");
+			const initVelocityYBox = document.getElementById("initVelocityY");
+			const turnBox = document.getElementById("turn");
+			const COLORS = ["red","blue","green","yellow","orange","purple"];
+			
+			// class that creates players 
+			class Player{
+				
+				constructor(centerX,centerY,color,hit){
+					this._centerX=centerX;
+					this._centerY=centerY;
+					this._color=color;
+					this._hit=hit;
+				}
+			
+				set centerX(newCenterX){
+					this._centerX=newCenterX;
+				}
+				
+				get centerX(){
+					return this._centerX;
+				}
+				
+				set centerY(newCenterY){
+					this._centerY=newCenterY;
+				}
+				
+				get centerY(){
+					return this._centerY;
+				}
+				
+				set color(newColor){
+					this._color=newColor;
+				}
+				get color(){
+					return this._color;
+				}
+				set hit(newHit){
+					this._hit=newHit;
+				}
+				
+				get hit(){
+					return this._hit;
+				}
+			}
+			
+			// class creates missile that the player fires 
+			class Missile{
+			
+				constructor(centerX,centerY,initVelocityX,initVelocityY,color,hit){
+				
+					this._centerX=centerX;
+					this._centerY=centerY;
+					this._initVelocityX=initVelocityX;
+					this._initVelocityY=initVelocityY;
+					this._velocityX=initVelocityX;
+					this._velocityY=initVelocityY;
+					this._color=color;
+					this._hit=hit;
+					this._secondsPassed=0;
+				}
+				
+				set initVelocityX(newInitVelocityX){
+					
+					this._initVelocityX = newInitVelocityX;
+				}
+				
+				get initVelocityX(){
+				
+					return this._initVelocityX;
+				}
+				
+				set initVelocityY(newInitVelocityY){
+					
+					this._initVelocityY = newInitVelocityY;
+				}
+				
+				get initVelocityY(){
+				
+					return this._initVelocityY;
+				}
+				
+				set velocityX(newVelocityX){
+					
+					this._velocityX = newVelocityX;
+				}
+				
+				get velocityX(){
+				
+					return this._velocityX;
+				}
+				
+				set velocityY(newVelocityY){
+					
+					this._velocityY = newVelocityY;
+				}
+				
+				get velocityY(){
+				
+					return this._velocityY;
+				}
+				
+				set centerX(newCenterX){
+					
+					this._centerX = newCenterX;
+				}
+				
+				get centerX(){
+					
+					return this._centerX;
+				}
+				
+				set centerY(newCenterY){
+					
+					this._centerY = newCenterY;
+				}
+				
+				get centerY(){
+					
+					return this._centerY;
+				}
+				
+				set secondsPassed(newSecondsPassed){
+					this._secondsPassed=newSecondsPassed;
+				}
+				
+				get secondsPassed(){
+					return this._secondsPassed;
+				}
+				
+				set color(newColor){
+					this._color=newColor;
+				}
+				
+				get color(){
+					return this._color;
+				}
+				
+				set hit(newHit){
+					this._hit=newHit;
+				}
+				
+				get hit(){
+					return this._hit;
+				}
+			}
+			
+			function setPlayers(){
+				
+				numPlayers = prompt("How many players do you want?(Choose 2-6)");
+				
+				// input validation 
+				while(isNaN(numPlayers)){
+					numPlayers = prompt("How many players do you want?(Choose 2-6)");
+				}
+				
+				while (numPlayers<2 || numPlayers>6){
+					numPlayers = prompt("How many players do you want?(Choose 2-6)");
+				}
+				
+				numPlayers = parseInt(numPlayers);
+				playersLeft=numPlayers;
+				
+				// create each player object 
+				for(i=0;i<=numPlayers-1;i++){
+					
+					// check if players are placed too close to each other 
+					
+					occupied=true;
+					
+					while(occupied){
+						
+						playerX = Math.floor(Math.random()*870)+50;
+						playerY = Math.floor(Math.random()*480)+50;
+						
+						occupied = false;
+						
+						for(i=0;i<=players.length-1;i++){
+							
+							if((playerX-players[i].centerX)**2 + (playerY-players[i].centerY)**2 <=1600){
+								occupied=true;
+							}
+						}
+					}
+					
+					player = new Player(playerX,playerY,COLORS[i],false);
+					players.push(player);
+				}
+			}
+			
+			function fire(){
+				
+				// create new balls when button is clicked 
+				missile = new Missile(startX,startY,initVelocityXValue,initVelocityYValue,playerTurn,false);
+				missiles.push(missile);
+			}
+			
+			function updateScreen(){
+				
+				context.clearRect(0,0, canvas.width,canvas.height);
+				
+				// draw background image 
+				context.drawImage(img, 0, 0,canvas.width,canvas.height);
+				
+				// draw players 
+				for(i=0;i<=players.length-1;i++){
+					
+					if(!players[i].hit){
+						
+						context.fillStyle=players[i].color;
+						context.beginPath();
+						context.arc(players[i].centerX,players[i].centerY,10,0,2*Math.PI);
+						context.closePath();
+						context.fill();
+						
+					}
+				}
+				
+				// redraw missiles
+				
+				for(i=0;i<=missiles.length-1;i++){
+					
+					if(!missiles[i].hit){
+					
+						// draw each missile 
+						context.fillStyle=missiles[i].color;
+						context.beginPath();
+						context.arc(missiles[i].centerX,missiles[i].centerY,3,0,2*Math.PI);
+						context.closePath();
+						context.fill();
+					}
+					
+					// check if missile has hit player 
+					for(j=0;j<=players.length-1;j++){
+							
+						if((missiles[i].centerX - players[j].centerX)**2 + (missiles[i].centerY - players[j].centerY)**2 <=42.25 && !players[j].hit && !missiles[i].hit && (startX-players[j].centerX)**2 +(startY-players[j].centerY)**2 >56.25){
+						
+							players[j].hit=true;
+							missiles[i].hit=true;
+							
+							playersLeft--;
+						}
+							
+					}
+					
+					// update attributes of missile
+					missiles[i].velocityY = gravity*missiles[i].secondsPassed+(-1*missiles[i].initVelocityY);
+					missiles[i].velocityX = missiles[i].initVelocityX;
+					
+					missiles[i].centerX+=0.01*missiles[i].velocityX;
+					missiles[i].centerY+=0.01*missiles[i].velocityY;
+					
+					missiles[i].secondsPassed+=0.01;
+						
+				}
+				
+				// game over condition
+				if(playersLeft == 1){
+					
+					for(i=0;i<=players.length-1;i++){
+					
+						if(!players[i].hit){
+							alert(players[i].color.toString().concat(" wins"));
+							location.reload();
+						}
+					}
+				}
+			}
+
+			function apply(){
+			
+				// input validation
+				if(!isNaN(initVelocityXBox.value)){
+				
+					if(Number(initVelocityXBox.value)){
+						initVelocityXValue = Number(initVelocityXBox.value);
+					}
+			
+				}
+				
+				if(!isNaN(initVelocityYBox.value)){
+
+					initVelocityYValue = Number(initVelocityYBox.value);
+					
+			
+				}
+			}
+			
+				// respond to mousemove event on canvas 
+				function selectPlayer(event){
+				
+					// check if player has been clicked on 
+					for(i=0;i<=players.length-1;i++){
+					
+						if((event.clientX-rect.left - players[i].centerX)**2 + (event.clientY-rect.top - players[i].centerY)**2 <=25 && !players[i].hit ){
+							
+							
+							playerTurn=COLORS[i];
+							turnBox.value=COLORS[i];
+						
+							startX=players[i].centerX;
+							startY=players[i].centerY;
+							
+						}
+					}
+				}
+				
+			function init(){
+			
+				// set random planet location
+				
+				if(planet == 1){
+					gravity = 3.61;
+					img = document.getElementById("Mercury");
+				}
+				else if(planet == 2){
+					gravity = 8.83;
+					img = document.getElementById("Venus");
+				}
+				else if(planet == 3){
+					gravity = 9.8;
+					img = document.getElementById("Earth");
+				}
+				else if(planet == 4){
+					gravity = 1.6;
+					img = document.getElementById("Moon");
+				}
+				else if(planet == 5){
+					gravity = 3.75;
+					img = document.getElementById("Mars");
+				}
+				else if(planet == 6){
+					gravity = 26.0;
+					img = document.getElementById("Jupiter");
+				}
+				else if(planet == 7){
+					gravity = 11.2;
+					img = document.getElementById("Saturn");
+				}
+				else if(planet == 8){
+					gravity = 10.5;
+					img = document.getElementById("Uranus");
+				}
+				else if(planet == 9){
+					gravity = 13.3;
+					img = document.getElementById("Neptune");
+				}
+				else if(planet == 10){
+					gravity = 0.61;
+					img = document.getElementById("Pluto");
+				}
+
+				setPlayers();
+				
+				// update screen every 10 milliseconds
+				setInterval(updateScreen,10);
+				
+				// delete unwanted objects every 10 milliseconds +
+				setInterval(deleteObjects,10);
+			}
+			
+			function deleteObjects(){
+				
+				// delete Ball object properties to save space in memory 
+			
+				// case when missile moves of the screen
+				for(i=0;i<=missiles.length-1;i++){
+					if(missiles[i].centerX>1000 || missiles[i].centerX<-100 || missiles[i].centerY>650 || missiles[i].centerY<-100 || missiles[i].hit ){
+					
+						delete missiles[i].centerX;
+						delete missiles[i].centerY;
+						delete missiles[i].initVelocityX;
+						delete missiles[i].initVelocityY;
+						delete missiles[i].color;
+						delete missiles[i].secondsPassed;
+
+					}
+				}
+			
+				for(i=0;i<=players.length-1;i++){
+				
+					if(players[i].hit){
+					
+						delete players[i].centerX;
+						delete players[i].centerY;
+						delete players[i].color;
+						delete players[i].hit;
+				
+					}
+				}
+			}
+			
+			window.onload=init;
+			
+		</script>
+	</body>
+</html>
